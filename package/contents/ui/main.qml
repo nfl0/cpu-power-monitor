@@ -35,18 +35,18 @@ Item {
 
     Plasmoid.preferredRepresentation: Plasmoid.fullRepresentation
 
-    property string batPath: getBatPath()
-    property bool powerNow: checkPowerNow(batPath)
-    property double power: getPower(batPath)
-    property int oldPower: 0
+    property string rAPLPath: getRAPLPath()
+    property bool energyNow: checkEnergyNow(rAPLPath)
+    property double power: getPower(rAPLPath)
+    property double oldEnergy: 0.0
+    property double oldTime: 0
 
-    //this function tries to find the exact path to battery file
-    function getBatPath() {
+    function getRAPLPath() {
         return "/sys/class/powercap/intel-rapl:0/energy_uj"
     }
 
-    //this function checks if the "/sys/class/power_supply/BAT[i]/power_now" file exists
-    function checkPowerNow(fileUrl) {
+
+    function checkEnergyNow(fileUrl) {
         if(fileUrl == "") {
             return false
         }
@@ -65,28 +65,25 @@ Item {
         }
     }
 
-    //Returns power usage in Watts, rounded off to 1 decimal.
     function getPower(fileUrl) {
-        //if there is no BAT[i] file at all
         if(fileUrl == "") {
             return "0.0"
         }
-
-        //in case the "power_now" file exists:
-        if( main.powerNow == true) {
+        if( main.energyNow == true) {
             var path = fileUrl
+            var time = (new Date).getTime()
             var req = new XMLHttpRequest();
             req.open("GET", path, false);
             req.send(null);
 
-            var power = parseInt(req.responseText) / 1000000;
-            power = power / plasmoid.configuration.updateInterval
-            var delta = power - main.oldPower
-//             console.log(main.oldPower)
-//             console.log(power)
-//             console.log(delta)
-            main.oldPower = power
-            return(Math.round(delta*10)/10);
+            var nrgInJoules = parseInt(req.responseText) / 1000000;
+            var timeDelta = (time - main.oldTime) / 1000
+            
+            var power = (nrgInJoules - main.oldEnergy) / timeDelta
+            console.log(main.oldEnergy, nrgInJoules, main.oldTime, time, timeDelta, power)
+            main.oldEnergy = nrgInJoules
+            main.oldTime = time
+            return(Math.round(power*10)/10);
         }
         return "0.0"
     }
@@ -122,7 +119,7 @@ Item {
         running: true
         repeat: true
         onTriggered: {
-            main.power = getPower(main.batPath)
+            main.power = getPower(main.rAPLPath)
             if(Number.isInteger(main.power)) {
                 //When power has 0 decimal places, it removes the decimal
                 //point inspite of power variable being double. This momentarily
