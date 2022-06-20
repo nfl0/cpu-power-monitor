@@ -3,7 +3,7 @@
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
+ * published by the Free Software Foundation; either version 3 of
  * the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -12,14 +12,14 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http: //www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http: //www.gnu.org/licenses/gpl-3.0.html>.
  */
 
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.plasmoid 2.0
-
+import org.kde.plasma.core 2.0 as PlasmaCore
 
 Item {
     id: main
@@ -42,7 +42,7 @@ Item {
     property double oldTime: 0
 
     function getRAPLPath() {
-        return "/sys/class/powercap/intel-rapl:0/energy_uj"
+        return "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj"
     }
 
 
@@ -66,9 +66,6 @@ Item {
     }
 
     function getPower(fileUrl) {
-        if(fileUrl == "") {
-            return "0.0"
-        }
         if( main.energyNow == true) {
             var path = fileUrl
             var time = (new Date).getTime()
@@ -80,14 +77,34 @@ Item {
             var timeDelta = (time - main.oldTime) / 1000
             
             var power = (nrgInJoules - main.oldEnergy) / timeDelta
-            console.log(main.oldEnergy, nrgInJoules, main.oldTime, time, timeDelta, power)
+//             console.log(main.oldEnergy, nrgInJoules, main.oldTime, time, timeDelta, power)
             main.oldEnergy = nrgInJoules
             main.oldTime = time
             return(Math.round(power*10)/10);
         }
+        else{
+            main.energyNow = main.checkEnergyNow(main.getRAPLPath())
+        }
         return "0.0"
     }
+    
+    Component.onCompleted: {
+        plasmoid.setAction('fixPermissions', i18n('Fix Sensor Permission'), 'view-refresh')
+    }
+PlasmaCore.DataSource {
+		id: executable
+		engine: "executable"
+		connectedSources: []
+		onNewData: disconnectSource(sourceName)
 
+	}
+	
+    function action_fixPermissions(){
+//         console.log('before change')
+        executable.connectSource('pkexec chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj')
+//         console.log('after change')
+    }
+    
     PlasmaComponents.Label {
         id: display
 
