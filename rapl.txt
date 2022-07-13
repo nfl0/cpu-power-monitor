@@ -1,0 +1,20 @@
+My findings, for future reference
+
+
+intel-rapl/intel-rapl:0/name                                    package-0
+intel-rapl/intel-rapl:0/energy_uj                               73904878796
+
+intel-rapl/intel-rapl:0/intel-rapl:0:0/name                     core
+intel-rapl/intel-rapl:0/intel-rapl:0:0/energy_uj                32612448433
+
+intel-rapl/intel-rapl:0/intel-rapl:0:1/name                     uncore
+intel-rapl/intel-rapl:0/intel-rapl:0:1/energy_uj                88927
+
+intel-rapl/intel-rapl:0/intel-rapl:0:2/name                     dram
+intel-rapl/intel-rapl:0/intel-rapl:0:2/energy_uj                5281798063
+
+intel-rapl-mmio/intel-rapl-mmio:0/name                          package-0
+intel-rapl-mmio/intel-rapl-mmio:0/energy_uj                     73904878796
+
+intel-rapl-mmio/intel-rapl-mmio:0/intel-rapl-mmio:0:0/name      dram
+intel-rapl-mmio/intel-rapl-mmio:0/intel-rapl-mmio:0:0/energy_uj 5281798063
