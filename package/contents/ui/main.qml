@@ -24,87 +24,75 @@ import org.kde.plasma.core 2.0 as PlasmaCore
 Item {
     id: main
     anchors.fill: parent
-    
-    //height and width, when the widget is placed in desktop
     width: 60
     height: 15
-
-    //height and width, when widget is placed in plasma panel
     Layout.preferredWidth: 60 * units.devicePixelRatio
     Layout.preferredHeight: 15 * units.devicePixelRatio
 
     Plasmoid.preferredRepresentation: Plasmoid.fullRepresentation
 
-    property string rAPLPath: getRAPLPath()
-    property bool energyNow: checkEnergyNow(rAPLPath)
-    property double power: getPower(rAPLPath)
-    property double oldEnergy: 0.0
+    property string raplPath: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj"
+    property double power: 0
+    property double oldEnergy: 0
     property double oldTime: 0
+    property var globalResponse:0
 
-    function getRAPLPath() {
-        return "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj"
+    PlasmaCore.DataSource {
+        id: executable
+        engine: "executable"
+        connectedSources: []
+        onNewData: {
+            var exitCode = data["exit code"]
+            var exitStatus = data["exit status"]
+            var stdout = data["stdout"]
+            var stderr = data["stderr"]
+            exited(sourceName, exitCode, exitStatus, stdout, stderr)
+            disconnectSource(sourceName)
+        }
+        onExited:{
+            main.globalResponse=stdout.trim();
+        }
+        function exec(cmd) {
+            if (cmd) {
+                connectSource(cmd)
+            }
+        }
+        signal exited(string cmd, int exitCode, int exitStatus, string stdout, string stderr)
     }
 
-
-    function checkEnergyNow(fileUrl) {
-        if(fileUrl == "") {
-            return false
-        }
-
-        var path = fileUrl
-        var req = new XMLHttpRequest();
-
-        req.open("GET", path, false);
-        req.send(null);
-
-        if(req.responseText == "") {
-            return false
-        }
-        else {
-            return true
+    function update(){
+        executable.exec('cat ' + main.raplPath);
+        if (main.globalResponse==''){
+            display.text='PERM';
+        } else {
+            var time = (new Date).getTime();
+            var nrgInJ = parseInt(main.globalResponse) / 1000000;
+            var timeDelta = (time - main.oldTime) / 1000;
+            main.power = Math.round((nrgInJ - main.oldEnergy)*10 / (timeDelta))/10;
+            main.oldEnergy=nrgInJ;
+            main.oldTime=time
+            // console.log(power);
+            if (Number.isInteger(main.power)){
+                display.text=main.power+'.0 W';
+            } else {
+                display.text=main.power+' W';
+            }
         }
     }
 
-    function getPower(fileUrl) {
-        if( main.energyNow == true) {
-            var path = fileUrl
-            var time = (new Date).getTime()
-            var req = new XMLHttpRequest();
-            req.open("GET", path, false);
-            req.send(null);
-
-            var nrgInJoules = parseInt(req.responseText) / 1000000;
-            var timeDelta = (time - main.oldTime) / 1000
-            
-            var power = (nrgInJoules - main.oldEnergy) / timeDelta
-//             console.log(main.oldEnergy, nrgInJoules, main.oldTime, time, timeDelta, power)
-            main.oldEnergy = nrgInJoules
-            main.oldTime = time
-            return(Math.round(power*10)/10);
-        }
-        else{
-            main.energyNow = main.checkEnergyNow(main.getRAPLPath())
-        }
-        return "0.0"
-    }
-    
-    Component.onCompleted: {
-        plasmoid.setAction('fixPermissions', i18n('Fix Sensor Permission'), 'view-refresh')
-    }
-PlasmaCore.DataSource {
-		id: executable
-		engine: "executable"
-		connectedSources: []
-		onNewData: disconnectSource(sourceName)
-
-	}
-	
     function action_fixPermissions(){
-//         console.log('before change')
         executable.connectSource('pkexec chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj')
-//         console.log('after change')
     }
-    
+
+    function action_fixPermissionCron(){
+        executable.connectSource('pkexec bash -c "crontab -l > cron_bkp && echo \"@reboot chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj\" >> cron_bkp && crontab cron_bkp && rm cron_bkp" ')
+        // executable.connectSource('pkexec python3 permafix.py')
+    }
+
+    Component.onCompleted: {
+        plasmoid.setAction('fixPermissions', i18n('Fix Sensor Permission'), 'view-refresh');
+    }
+
     PlasmaComponents.Label {
         id: display
 
@@ -117,12 +105,7 @@ PlasmaCore.DataSource {
         horizontalAlignment: Text.AlignHCenter
 
         text: {
-            if(Number.isInteger(main.power)) {
-                return(main.power + ".0 W");
-            }
-            else {
-                return(main.power + " W");
-            }
+            return '';
         }
 
         font.pixelSize: 1000;
@@ -136,18 +119,7 @@ PlasmaCore.DataSource {
         running: true
         repeat: true
         onTriggered: {
-            main.power = getPower(main.rAPLPath)
-            if(Number.isInteger(main.power)) {
-                //When power has 0 decimal places, it removes the decimal
-                //point inspite of power variable being double. This momentarily
-                //makes the font size bigger due to extra available space which
-                //does not look good. So we do this simple hack of manually adding 
-                //a .0 to number
-                display.text = main.power + ".0 W";
-            }
-            else {
-                display.text = main.power + " W"
-            }
+            update();
         }
     }
 }
