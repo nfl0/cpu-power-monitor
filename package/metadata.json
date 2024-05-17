@@ -1,0 +1,20 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "kphanipavan@gmail.com",
+                "Name": "Phani Pavan K"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Displays Real Time CPU Power Consumption in Watts",
+        "Icon": "battery",
+        "Id": "boi.walle.powerMonitor",
+        "License": "GPL3",
+        "Name": "CPU Power Monitor",
+        "KPackageStructure": "Plasma/Applet",
+        "Version": "0.3",
+        "Website": "https://github.com/kphanipavan/cpu-power-monitor"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

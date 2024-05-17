@@ -15,13 +15,15 @@
  * along with this program.  If not, see <http: //www.gnu.org/licenses/gpl-3.0.html>.
  */
 
-import QtQuick 2.6
-import QtQuick.Layouts 1.1
-import org.kde.plasma.components 3.0 as PlasmaComponents
-import org.kde.plasma.plasmoid 2.0
-import org.kde.plasma.core 2.0 as PlasmaCore
+import QtQuick
+import QtQuick.Layouts
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.plasmoid
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasma5support as Plasma5Support
 
-Item {
+
+PlasmoidItem {
     id: main
     anchors.fill: parent
     width: 60
@@ -29,7 +31,7 @@ Item {
     Layout.preferredWidth: 60 * units.devicePixelRatio
     Layout.preferredHeight: 15 * units.devicePixelRatio
 
-    Plasmoid.preferredRepresentation: Plasmoid.fullRepresentation
+    preferredRepresentation: Plasmoid.fullRepresentation
 
     property string raplPath: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj"
     property double power: 0
@@ -37,7 +39,7 @@ Item {
     property double oldTime: 0
     property var globalResponse:0
 
-    PlasmaCore.DataSource {
+    Plasma5Support.DataSource {
         id: executable
         engine: "executable"
         connectedSources: []

@@ -1,11 +1,11 @@
-import QtQuick 2.6
-import QtQuick.Controls 1.3
-import QtQuick.Layouts 1.1
-import org.kde.plasma.components 3.0 as PlasmaComponents
-import org.kde.plasma.core 2.0 as PlasmaCore
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.core as PlasmaCore
 
 
-Item {
+PlasmoidItem {
     id: settings
     property alias cfg_updateInterval: updateInterval.value
     property alias cfg_makeFontBold: makeFontBold.checked
