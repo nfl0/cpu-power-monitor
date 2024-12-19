@@ -20,8 +20,8 @@ jobs:
       - name: Package Plasmoid
         run: |
           cd $GITHUB_WORKSPACE/package
-          zip -r cpuPowerMon_Latest.plasmoid ./*
-          cp cpuPowerMon_Latest.plasmoid ../
+          zip -r cpmPlasma6.plasmoid ./*
+          cp cpmPlasma6.plasmoid ../
       
       - name: Automatic Releases
         uses: marvinpinto/action-automatic-releases@latest
@@ -30,4 +30,4 @@ jobs:
           automatic_release_tag: "latest"
           prerelease: true
           title: "Master Build"
-          files: cpuPowerMon_Latest.plasmoid
+          files: cpmPlasma6.plasmoid
