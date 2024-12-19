@@ -1,85 +1,54 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import org.kde.plasma.components as PlasmaComponents
-import org.kde.plasma.core as PlasmaCore
-import org.kde.plasma.plasma5support as Plasma5Support
-import org.kde.plasma.plasmoid
+import QtQuick.Controls as Controls
+import org.kde.kirigami as Kirigami
+import org.kde.kcmutils
 
-PlasmoidItem {
-    id: settings
+SimpleKCM {
+    id: configItem
+    property alias cfg_delay: delay.value
+    property alias cfg_bold: bold.checked
 
-    // property alias cfg_updateInterval: updateInterval.value
-    property alias cfg_makeFontBold: makeFontBold.checked
-    property var doesntHaveFixCommand: 1
+    Kirigami.FormLayout {
 
-    Plasma5Support.DataSource {
-        id: executable
-
-        signal exited(string cmd, int exitCode, int exitStatus, string stdout, string stderr)
-
-        function exec(cmd) {
-            if (cmd)
-                connectSource(cmd);
-
+        Controls.CheckBox {
+            id: bold
+            text: "Use Bold Text "
+            LayoutMirroring.enabled: true
+            anchors.horizontalCenter: parent.horizontalCenter
         }
+        Controls.SpinBox {
+            id: delay
 
-        engine: "executable"
-        connectedSources: []
-        onNewData: {
-            var exitCode = data["exit code"];
-            var exitStatus = data["exit status"];
-            var stdout = data["stdout"];
-            var stderr = data["stderr"];
-            console.log(exitCode);
-            console.log(exitStatus);
-            console.log(stdout);
-            console.log(stderr);
-            exited(sourceName, exitCode, exitStatus, stdout, stderr);
-            disconnectSource(sourceName);
-        }
-        onExited: {
-            settings.doesntHaveFixCommand = stdout.trim();
-        }
-    }
+            from: decimalToInt(0.1)
+            value: decimalToInt(1.0)
+            to: decimalToInt(10)
+            stepSize: decimalToInt(0.1)
+            editable: true
+            Kirigami.FormData.label: "Update Delay"
+            hoverEnabled: true
 
-    ColumnLayout {
-        // RowLayout {
-        //     SpinBox {
-        //         // textFromValue: i18nc("Abbreviation for seconds", "s")
-        //         id: updateInterval
-        //         readonly property int decimalFactor: 10
-        //         function decimalToInt(decimal) {
-        //             return decimal * decimalFactor;
-        //         }
-        //         value: decimalToInt(1)
-        //         stepSize: decimalToInt(0.1)
-        //         from: decimalToInt(0.1)
-        //         to: decimalToInt(4)
-        //     }
-        // Label {
-        //     id: updateIntervalLabel
-        //     text: i18n("Update interval:")
-        // }
-        // }
+            property int decimals: 1
+            property real realValue: value / decimalFactor
+            readonly property int decimalFactor: Math.pow(10, decimals)
 
-        CheckBox {
-            id: makeFontBold
+            function decimalToInt(decimal) {
+                return decimal * decimalFactor;
+            }
 
-            text: i18n("Bold Text")
-        }
+            validator: DoubleValidator {
+                bottom: Math.min(delay.from, delay.to)
+                top: Math.max(delay.from, delay.to)
+                decimals: delay.decimals
+                notation: DoubleValidator.StandardNotation
+            }
 
-        PlasmaComponents.Button {
-            // iconSource: ""
-            text: i18n('Add "Fix Permission" to CronJobs')
-            onPressed: {
-                // executable.exec('pkexec crontab -l | grep "@reboot chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj" > /dev/null ; echo $?')
-                // if (settings.doesntHaveFixCommand=='1'){
-                // executable.connectSource('pkexec bash -c "crontab -l > ~/cron_bkp && echo @reboot chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj >> ~/cron_bkp && crontab ~/cron_bkp && rm ~/cron_bkp" ')
-                executable.connectSource('pkexec bash -c "crontab -l | grep @reboot | grep chmod | grep 444 | grep /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj > /dev/null" ; if [[ $? -eq 1 ]]; then pkexec bash -c "echo yes && crontab -l > ~/cron_bkp && echo @reboot chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj >> ~/cron_bkp && crontab ~/cron_bkp && rm ~/cron_bkp" ; fi');
+            textFromValue: function (value, locale) {
+                return Number(value / decimalFactor).toLocaleString(locale, 'f', delay.decimals);
+            }
+
+            valueFromText: function (text, locale) {
+                return Math.round(Number.fromLocaleString(locale, text) * decimalFactor);
             }
         }
-
     }
-
 }

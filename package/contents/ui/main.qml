@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Phani Pavan K <kphanipavan@gmail.com>
+ * Copyright 2024 Phani Pavan K <kphanipavan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -16,122 +16,96 @@
  */
 
 import QtQuick
-import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasma5support as Plasma5Support
+import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 
-PlasmoidItem {
-    // executable.connectSource('pkexec python3 permafix.py')
-    // Component.onCompleted: {
-    //     plasmoid.setAction('fixPermissions', i18n('Fix Sensor Permission'), 'view-refresh');
-    // }
+PlasmoidItem { // Main component of the plasmoid
+    id: root // Reference name of the main component
+    preferredRepresentation: fullRepresentation
+    property var power: "FX-PR" // Variable used for holding the text to display in the widget
+    property double oldNRG: 0 // State variable, to hold old energy value
+    property double newNRG: 0 // State variable, used for storing new energy value
+    property double oldTime: 0 // State variable, to store old time
+    property string raplPath: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj" // Path to file which stores the energy information
 
-    id: main
+    // The main UI component, shows simple text
+    fullRepresentation: PlasmaComponents.Label {
+        id: output
+        text: root.power
+        fontSizeMode: Text.Fit
+        anchors.fill: parent
+        font.pixelSize: 1000
+        verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
+        font.bold: plasmoid.configuration.bold
+    }
 
-    property string raplPath: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj"
-    property double power: 0
-    property double oldEnergy: 0
-    property double oldTime: 0
-    property var globalResponse: 0
+    // Command execution engine. Runs the cat and chmod commands
+    Plasma5Support.DataSource {
+        id: executable
+        engine: "executable"
+        connectedSources: []
+        onNewData: function (source, data) {
+            // when a command is executed, store the output of the command into stdout variable.
+            // Only 2 commands are executed.
+            // chmod to fix the file permission, which doesn't produce any output
+            // cat to get the value, this outputs the energy values in the file.
+            // below code gets that value and stores it in newNRG variable.
+            var stdout = data["stdout"];
+            disconnectSource(source);
+            root.newNRG = stdout.trim();
+        }
 
-    function update() {
-        executable.exec('cat ' + main.raplPath);
-        if (main.globalResponse == '') {
-            display.text = 'PERM';
-        } else {
-            var time = (new Date).getTime();
-            var nrgInJ = parseInt(main.globalResponse) / 1e+06;
-            var timeDelta = (time - main.oldTime) / 1000;
-            main.power = Math.round((nrgInJ - main.oldEnergy) * 10 / (timeDelta)) / 10;
-            main.oldEnergy = nrgInJ;
-            main.oldTime = time;
-            // console.log(power);
-            if (Number.isInteger(main.power))
-                display.text = main.power + '.0 W';
-            else
-                display.text = main.power + ' W';
+        function exec(cmd) {
+            executable.connectSource(cmd);
         }
     }
 
-    function action_fixPermissions() {
-        executable.connectSource('pkexec chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj');
-    }
-
-    function action_fixPermissionCron() {
-        executable.connectSource('pkexec bash -c "crontab -l > cron_bkp && echo \"@reboot chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj\" >> cron_bkp && crontab cron_bkp && rm cron_bkp" ');
-    }
-
-    anchors.fill: parent
-    width: 60
-    height: 15
-    Layout.preferredWidth: 60 * Kirigami.Units.devicePixelRatio
-    Layout.preferredHeight: 15 * Kirigami.Units.devicePixelRatio
-    preferredRepresentation: fullRepresentation
     Plasmoid.contextualActions: [
         PlasmaCore.Action {
+            // Right click action to fix the file permission
             text: i18n("Fix Sensor Permission")
             icon.name: "view-refresh"
-            onTriggered: executable.connectSource('pkexec chmod 444 /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj')
+            onTriggered: fixPermission()
         }
     ]
 
-    Plasma5Support.DataSource {
-        id: executable
-
-        signal exited(string cmd, int exitCode, int exitStatus, string stdout, string stderr)
-
-        function exec(cmd) {
-            if (cmd)
-                connectSource(cmd);
-
-        }
-
-        engine: "executable"
-        connectedSources: []
-        onNewData: {
-            var exitCode = data["exit code"];
-            var exitStatus = data["exit status"];
-            var stdout = data["stdout"];
-            var stderr = data["stderr"];
-            exited(sourceName, exitCode, exitStatus, stdout, stderr);
-            disconnectSource(sourceName);
-        }
-        onExited: {
-            main.globalResponse = stdout.trim();
-        }
+    function fixPermission() {
+        // Main function to fix the permission
+        executable.exec(["pkexec", "chmod", "444", root.raplPath].join(" "));
     }
 
-    PlasmaComponents.Label {
-        id: display
-
-        verticalAlignment: Text.AlignVCenter
-        horizontalAlignment: Text.AlignHCenter
-        text: {
-            return '';
+    function update() {
+        // Code to recalculate new power draw and update the UI
+        executable.exec('cat ' + root.raplPath);
+        console.log(root.newNRG);
+        print(root.newNRG);
+        if (root.newNRG == '') {
+            root.power = 'FX-PR';
+        } else {
+            var time = (new Date).getTime();
+            var timeDelta = (time - root.oldTime) / 1000;
+            console.log(timeDelta);
+            var joules = parseInt(root.newNRG) / 1e+06;
+            root.power = Math.round((joules - root.oldNRG) * 10 / (timeDelta)) / 10;
+            root.oldNRG = joules;
+            root.oldTime = time;
+            if (Number.isInteger(root.power))
+                root.power = root.power + '.0 W';
+            else
+                root.power = root.power + ' W';
         }
-        font.pixelSize: 1000
-        minimumPointSize: Kirigami.Theme.smallFont.pointSize
-        fontSizeMode: Text.Fit
-        font.bold: plasmoid.configuration.makeFontBold
-
-        anchors {
-            fill: parent
-            margins: Math.round(parent.width * 0.01)
-        }
-
     }
 
     Timer {
-        // interval: plasmoid.configuration.updateInterval * 1000
-        interval: 1000
-        running: true
+        // Repeating trigger which calls the update function
+        interval: plasmoid.configuration.delay * 100
         repeat: true
-        onTriggered: {
-            update();
-        }
+        running: true
+        onTriggered: update()
     }
-
 }
