@@ -8,6 +8,7 @@ SimpleKCM {
     property alias cfg_delay: delay.value
     property alias cfg_bold: bold.checked
     property alias cfg_debug: debug.checked
+    property alias cfg_enableGPU: enableGPU.checked
 
     Kirigami.FormLayout {
 
@@ -20,6 +21,12 @@ SimpleKCM {
         Controls.CheckBox {
             id: debug
             text: "Enable Debug Logging"
+            LayoutMirroring.enabled: true
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+        Controls.CheckBox {
+            id: enableGPU
+            text: "Enable AMD GPU Power Monitoring"
             LayoutMirroring.enabled: true
             anchors.horizontalCenter: parent.horizontalCenter
         }

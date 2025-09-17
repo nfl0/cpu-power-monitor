@@ -22,5 +22,10 @@
       <whatsthis>If enabled, logs will be printed to the system journal. Disable to suppress logs.</whatsthis>
       <default>false</default>
     </entry>
+    <entry name="enableGPU" type="Bool">
+      <label>Enable AMD GPU Power Monitoring</label>
+      <whatsthis>If enabled, attempts to monitor AMD GPU power consumption in addition to CPU.</whatsthis>
+      <default>false</default>
+    </entry>
   </group>
 </kcfg>

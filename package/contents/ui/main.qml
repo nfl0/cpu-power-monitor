@@ -32,6 +32,10 @@ PlasmoidItem { // Main component of the plasmoid
     property double oldTime: 0 // State variable, to store old time
     property string raplPath: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj" // Path to file which stores the energy information
     property bool debug: plasmoid.configuration.debug // Read debug config
+    property bool enableGPU: plasmoid.configuration.enableGPU // Read GPU config
+    property string gpuPath: "" // Path to AMD GPU power, found dynamically
+    property bool gpuPathFound: false // Whether we've searched for the GPU path
+    property double gpuPower: 0 // GPU power in Watts
 
     // The main UI component, shows simple text
     fullRepresentation: PlasmaComponents.Label {
@@ -52,13 +56,23 @@ PlasmoidItem { // Main component of the plasmoid
         connectedSources: []
         onNewData: function (source, data) {
             // when a command is executed, store the output of the command into stdout variable.
-            // Only 2 commands are executed.
-            // chmod to fix the file permission, which doesn't produce any output
-            // cat to get the value, this outputs the energy values in the file.
-            // below code gets that value and stores it in newNRG variable.
             var stdout = data["stdout"];
             disconnectSource(source);
-            root.newNRG = stdout.trim();
+            if (source.startsWith('find /sys/class/drm')) {
+                var path = stdout.trim();
+                if (path) {
+                    root.gpuPath = path;
+                    root.gpuPathFound = true;
+                    // Immediately read the GPU power
+                    executable.exec('cat ' + root.gpuPath);
+                } else {
+                    root.gpuPathFound = true;
+                }
+            } else if (source === 'cat ' + root.raplPath) {
+                root.newNRG = stdout.trim();
+            } else if (source === 'cat ' + root.gpuPath) {
+                root.gpuPower = parseFloat(stdout.trim() || 0) / 1e6;
+            }
         }
 
         function exec(cmd) {
@@ -83,6 +97,13 @@ PlasmoidItem { // Main component of the plasmoid
     function update() {
         // Code to recalculate new power draw and update the UI
         executable.exec('cat ' + root.raplPath);
+        if (root.enableGPU) {
+            if (!root.gpuPathFound) {
+                executable.exec('find /sys/class/drm -name power1_average 2>/dev/null | head -1');
+            } else if (root.gpuPath) {
+                executable.exec('cat ' + root.gpuPath);
+            }
+        }
         if (root.debug) {
             console.log(root.newNRG);
             print(root.newNRG);
@@ -96,13 +117,18 @@ PlasmoidItem { // Main component of the plasmoid
                 console.log(timeDelta);
             }
             var joules = parseInt(root.newNRG) / 1e+06;
-            root.power = Math.round((joules - root.oldNRG) * 10 / (timeDelta)) / 10;
+            var cpuPower = Math.round((joules - root.oldNRG) * 10 / (timeDelta)) / 10;
             root.oldNRG = joules;
             root.oldTime = time;
-            if (Number.isInteger(root.power))
-                root.power = root.power + '.0 W';
+            var display = "CPU: " + cpuPower;
+            if (Number.isInteger(cpuPower))
+                display += '.0 W';
             else
-                root.power = root.power + ' W';
+                display += ' W';
+            if (root.enableGPU) {
+                display += '\nGPU: ' + root.gpuPower.toFixed(1) + ' W';
+            }
+            root.power = display;
         }
     }
 

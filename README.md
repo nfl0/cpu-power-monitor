@@ -1,7 +1,7 @@
 # Power Monitor
-Another stupidly simple KDE Plasma 5 widget to monitor the power consumption of your CPU (only) in real time.
+Another stupidly simple KDE Plasma 5 widget to monitor the power consumption of your CPU and AMD GPU in real time.
 
-This is a fork of [Power Monitor](https://github.com/atul-g/plasma-power-monitor). The original measures the battery power consumption while this extension measures only <b>Intel</b> CPU's power.
+This is a fork of [Power Monitor](https://github.com/atul-g/plasma-power-monitor). The original measures the battery power consumption while this extension measures <b>Intel</b> CPU's power. This version adds support for AMD GPU power monitoring.
 
 ## Preview
 Widget as shown on desktop
@@ -21,7 +21,8 @@ To install this, right click on the desktop, click on `Add Widgets`, select `Get
 
 1. Update Interval: Changes the rate at which the widget updates
 2. Bold Text: Changes display text to <b>Bold</b>
-3. Add "Fix Permission" to CronJobs: Adds a cron job to <b> root's </b> cron list to fix sensor permission when the system reboots. When clicked,
+3. Enable AMD GPU Power Monitoring: If checked, displays AMD GPU power consumption below CPU power. The widget automatically detects the correct sysfs path for the GPU power sensor.
+4. Add "Fix Permission" to CronJobs: Adds a cron job to <b> root's </b> cron list to fix sensor permission when the system reboots. When clicked,
    * If it asked for the sudo password <b> twice</b>, this fix is successfully installed.
    * If it asked for the sudo password only <b> once</b>, the fix is already installed.
 
@@ -40,4 +41,4 @@ To install this, right click on the desktop, click on `Add Widgets`, select `Get
     
     * running `sudo chmod 444 /sys/class/powercap/intel-rapl:0/energy_uj` in konsole and see if the issue is fixed. (Temporary, resets on reboot)
 4. The power usage rises continously when the laptop is plugged in to A/C power. It is normal if you see high readings.
-5. This will only work for <b>Intel CPUs</b>.
+5. This will work for <b>Intel CPUs</b> and optionally <b>AMD GPUs</b> if enabled in settings.
