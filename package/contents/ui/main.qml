@@ -31,6 +31,7 @@ PlasmoidItem { // Main component of the plasmoid
     property double newNRG: 0 // State variable, used for storing new energy value
     property double oldTime: 0 // State variable, to store old time
     property string raplPath: "/sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj" // Path to file which stores the energy information
+    property bool debug: plasmoid.configuration.debug // Read debug config
 
     // The main UI component, shows simple text
     fullRepresentation: PlasmaComponents.Label {
@@ -82,14 +83,18 @@ PlasmoidItem { // Main component of the plasmoid
     function update() {
         // Code to recalculate new power draw and update the UI
         executable.exec('cat ' + root.raplPath);
-        console.log(root.newNRG);
-        print(root.newNRG);
+        if (root.debug) {
+            console.log(root.newNRG);
+            print(root.newNRG);
+        }
         if (root.newNRG == '') {
             root.power = 'FX-PR';
         } else {
             var time = (new Date).getTime();
             var timeDelta = (time - root.oldTime) / 1000;
-            console.log(timeDelta);
+            if (root.debug) {
+                console.log(timeDelta);
+            }
             var joules = parseInt(root.newNRG) / 1e+06;
             root.power = Math.round((joules - root.oldNRG) * 10 / (timeDelta)) / 10;
             root.oldNRG = joules;

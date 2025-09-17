@@ -7,12 +7,19 @@ SimpleKCM {
     id: configItem
     property alias cfg_delay: delay.value
     property alias cfg_bold: bold.checked
+    property alias cfg_debug: debug.checked
 
     Kirigami.FormLayout {
 
         Controls.CheckBox {
             id: bold
             text: "Use Bold Text "
+            LayoutMirroring.enabled: true
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+        Controls.CheckBox {
+            id: debug
+            text: "Enable Debug Logging"
             LayoutMirroring.enabled: true
             anchors.horizontalCenter: parent.horizontalCenter
         }

@@ -17,5 +17,10 @@
       <whatsthis>Use bold text</whatsthis>
       <default>false</default>
     </entry>
+    <entry name="debug" type="Bool">
+      <label>Enable Debug Logging</label>
+      <whatsthis>If enabled, logs will be printed to the system journal. Disable to suppress logs.</whatsthis>
+      <default>false</default>
+    </entry>
   </group>
 </kcfg>
